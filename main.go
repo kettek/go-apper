@@ -35,7 +35,10 @@ func init() {
 
 func main() {
 	flag.Parse()
-	if assetsDir == "" || iconFile == "" || binaryName == "" || appName == "" {
+	if assetsDir == "" {
+		log.Println("[WARNING] Assets directory unspecified.")
+	}
+	if iconFile == "" || binaryName == "" || appName == "" {
 		log.Println("[ERROR] Assets directory, binary name, icon file, and application name are required.")
 		flag.PrintDefaults()
 		return
@@ -95,27 +98,29 @@ func makeAppBundle(appFilename string) error {
 	}
 
 	// get the list of assets to copy
-	assetsDirFile, err := os.Open(assetsDir)
-	if err != nil {
-		return fmt.Errorf("opening assets directory: %v", err)
-	}
-	dirEntries, err := assetsDirFile.Readdirnames(100000)
-	if err != nil {
-		return fmt.Errorf("reading list of assets directory contents: %v", err)
-	}
-
-	// copy the assets into the bundle
-	for _, entry := range dirEntries {
-		if entry == binaryName {
-			continue // we already copied the binary, and it went into a different folder
+	if assetsDir != "" {
+		assetsDirFile, err := os.Open(assetsDir)
+		if err != nil {
+			return fmt.Errorf("opening assets directory: %v", err)
+		}
+		dirEntries, err := assetsDirFile.Readdirnames(100000)
+		if err != nil {
+			return fmt.Errorf("reading list of assets directory contents: %v", err)
 		}
 
-		src := filepath.Join(assetsDir, entry)
-		dest := filepath.Join(appFilename, "Contents", "Resources")
+		// copy the assets into the bundle
+		for _, entry := range dirEntries {
+			if entry == binaryName {
+				continue // we already copied the binary, and it went into a different folder
+			}
 
-		err = deepCopy(src, dest)
-		if err != nil {
-			return fmt.Errorf("copying assets '%s': %v", entry, err)
+			src := filepath.Join(assetsDir, entry)
+			dest := filepath.Join(appFilename, "Contents", "Resources")
+
+			err = deepCopy(src, dest)
+			if err != nil {
+				return fmt.Errorf("copying assets '%s': %v", entry, err)
+			}
 		}
 	}
 
